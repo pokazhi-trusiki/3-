@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'updatedAt'])
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.displayName is string
+        && data.displayName.size() > 0
+        && data.displayName.size() <= 100
+        && (!('email' in data) || (data.email is string && data.email.size() <= 200))
+        && (!('deviceModel' in data) || (data.deviceModel is string && data.deviceModel.size() <= 100))
+        && data.updatedAt is timestamp
+        && data.updatedAt <= request.time;
+    }
+
+    function isValidSharedSession(data) {
+      return data.keys().hasAll(['id', 'title', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 100
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 150
+        && data.createdBy is string
+        && (!('creatorName' in data) || (data.creatorName is string && data.creatorName.size() <= 100))
+        && (!('participantCount' in data) || (data.participantCount is number && data.participantCount >= 0))
+        && (!('activeMetric' in data) || (data.activeMetric is string && data.activeMetric.size() <= 50))
+        && data.createdAt is timestamp
+        && data.createdAt <= request.time
+        && data.updatedAt is timestamp
+        && data.updatedAt <= request.time;
+    }
+
+    function isValidTelemetryPoint(data) {
+      return data.keys().hasAll([
+          'id', 'sessionId', 'userId', 'userDisplayName',
+          'latitude', 'longitude', 'relX', 'relY',
+          'accelMagnitude', 'magMagnitude', 'createdAt'
+        ])
+        && data.id is string
+        && data.sessionId is string
+        && data.userId is string
+        && data.userId == request.auth.uid
+        && data.userDisplayName is string
+        && data.userDisplayName.size() <= 100
+        && (!('deviceId' in data) || (data.deviceId is string && data.deviceId.size() <= 100))
+        && data.latitude is number
+        && data.longitude is number
+        && data.relX is number
+        && data.relY is number
+        && data.accelMagnitude is number
+        && data.magMagnitude is number
+        && (!('gyroMagnitude' in data) || data.gyroMagnitude is number)
+        && (!('lightLux' in data) || data.lightLux is number)
+        && (!('pressureHpa' in data) || data.pressureHpa is number)
+        && (!('altitude' in data) || data.altitude is number)
+        && (!('accuracy' in data) || data.accuracy is number)
+        && (!('speedKmh' in data) || data.speedKmh is number)
+        && (!('bearing' in data) || data.bearing is number)
+        && data.createdAt is timestamp
+        && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+
+    match /shared_sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.createdBy == request.auth.uid
+        && isValidSharedSession(request.resource.data);
+      allow update: if isAuthenticated()
+        && isValidSharedSession(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+
+      match /points/{pointId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+          && request.resource.data.sessionId == sessionId
+          && request.resource.data.userId == request.auth.uid
+          && isValidTelemetryPoint(request.resource.data);
+        allow update: if false; // Points are immutable telemetry samples
+        allow delete: if isAuthenticated()
+          && (resource.data.userId == request.auth.uid || get(/databases/$(database)/documents/shared_sessions/$(sessionId)).data.createdBy == request.auth.uid);
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered multi-device user profile.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "deviceModel": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "updatedAt"]
+    },
+    "SharedSession": {
+      "title": "SharedSession",
+      "description": "Collaborative shared 3D heatmap mapping session across multiple devices.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "participantCount": { "type": "number" },
+        "activeMetric": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "createdBy", "createdAt", "updatedAt"]
+    },
+    "TelemetryPoint": {
+      "title": "TelemetryPoint",
+      "description": "Real-time spatial sensor reading contributed by a device to the shared heatmap.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "altitude": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "speedKmh": { "type": "number" },
+        "bearing": { "type": "number" },
+        "relX": { "type": "number" },
+        "relY": { "type": "number" },
+        "accelMagnitude": { "type": "number" },
+        "magMagnitude": { "type": "number" },
+        "gyroMagnitude": { "type": "number" },
+        "lightLux": { "type": "number" },
+        "pressureHpa": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "sessionId",
+        "userId",
+        "userDisplayName",
+        "latitude",
+        "longitude",
+        "relX",
+        "relY",
+        "accelMagnitude",
+        "magMagnitude",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document."
+    },
+    "/shared_sessions/{sessionId}": {
+      "schema": "SharedSession",
+      "description": "Collaborative shared heatmap rooms."
+    },
+    "/shared_sessions/{sessionId}/points/{pointId}": {
+      "schema": "TelemetryPoint",
+      "description": "Real-time shared multi-device sensor points in a session."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SensorMap 3D",
+  "description": "Continuous real-time all-sensor polling, GPS spatial tracking, and interactive 3D heatmap visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
